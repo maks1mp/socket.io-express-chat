@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <style type="text/css">
+    
+        .emodzi-block img {
+            width: 70px;
+            height: 70px;
+            display: inline-block;
+        }
+        .message {
+            font-size: 16px;
+            margin-top: 2px;
+            margin-bottom: 0px;
+            border-radius: 8px;
+            padding: 3px;
+            background: blue;
+            color: white;
+            display: inline-block;
+            word-wrap: break-word;
+        }    
+        .chat {
+            width: 100%;   
+        }   
+        
+        .enter-message {
+            width: 500px;
+            float: right;
+
+        }
+        .chat-message {
+            float: left;
+            width: calc(100% - 600px);
+            min-height: 600px;
+            max-height: 650px;
+            overflow: auto;
+            overflow-x: hidden;
+            background: url('http://clip2net.com/clip/m514718/1460706995-0b105-88kb.jpg?nocache=1') no-repeat top right;
+        }
+        .time {
+            font-size: 12px;
+        }
+        .invisible {
+            display: none;
+        }
+        .emodzi-block {
+            width: 310px;
+            height: 200px;
+            overflow: auto;
+            border: 1px solid black;
+        }
+        .text {
+            width: 300px;
+            height: 150px;
+            overflow: auto;
+            border: 1px solid black;
+            padding: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="enter-message">
+    <h1>Socet.io + express chat</h1>
+    <label>User name: <input type="text" class="name" name="" placeholder="Enter your name"/></label>
+    <br/>
+    <br/>
+    <div class="text" contenteditable></div>  
+    <br/>
+    <br/>
+    <button class="send">SEND</button>
+    <button class="emodzi">ADD EMODZI</button>
+    <br/>
+    <br/>
+    <div class="emodzi-block invisible">
+        <img src="https://img-fotki.yandex.ru/get/9171/134091466.9f/0_c0d57_995a4bc5_S">
+        <img src="http://icons.iconarchive.com/icons/iconshock/super-heros/256/spider-man-icon.png">
+        <img src="http://lh5.ggpht.com/-_1pDGXMyu7Y/UMVqxR13BFI/AAAAAAAAAJw/0ns2PhRiZbY/s9000/cat.png">
+        <img src="https://pixabay.com/static/uploads/photo/2015/01/22/12/58/terrorist-607711_960_720.png">
+        <img src="https://pp.vk.me/c624326/v624326476/4c8ab/ZDAJG_xe91s.jpg">
+        <img src="http://www.ochevidets.ru/userfiles/2014/10/21/e7e00d02d5.gif">
+        <img src="http://s.pikabu.ru/post_img/2013/06/25/1/1372109975_1859689574.gif">
+        <img src="http://clip2net.com/clip/m514718/1460546926-4aa4e-283kb.png?nocache=1">
+    </div>
+    </div>
+    <div class="chat-message">
+        <h1>Hi there!</h1>
+        <h5>Users online: <span class="online_users"></span></h5>
+    <div class="chat"></div>
+    </div>
+    
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-2.2.0.min.js"></script>
+    <script>
+    $(document).ready(function(){
+        
+        var date = new Date();
+        var time = date.toLocaleDateString() + ' ' + date.getHours() + ':' + date.getMinutes();
+            
+        $('body').keydown(function(e){
+            if (e.keyCode == 13) {
+                $('.send').trigger('click');
+            }
+        })
+        
+        $('.emodzi').on('click', function() {
+           $('.emodzi-block').toggleClass('invisible'); 
+        });
+        var em = $('.emodzi-block').find('img');
+        
+        em.on('click', function(){
+            $(this).clone().css({
+                width: '55px',
+                height: '55px',
+            }).appendTo('.text');
+        });
+        
+        var name = $('.name');
+        
+        var socket = io.connect('http://localhost:3000/');
+
+        $('.send').on('click', function(){
+            
+            if (name.val().length == 0) {
+                name.val('Anonimus'); 
+            } 
+            
+            var text = $('.text').html();
+            if ((text == ' ') || (text.length<1)) {
+                return false;
+            } else {
+            socket.emit('send_mess', {text: text , user_name: name.val()});
+             $('.text').text('');
+            }
+        });
+
+        socket.on('news', function (data) {
+            for (i in data.all_mess) {
+                console.log(data.all_mess[i]);
+                 var tpl = '<span class="name">'+ 'From user: ' + data.all_mess[i].user_name +'</span>'+'<br>'+'<p class="message">' + data.all_mess[i].text + '</p>'+ '</br>' + '<span class="time">'+ time +'</span>' + '<br>' +'<br>'
+                $(tpl).prependTo('.chat');
+            }
+        if (data.connected == 1) {
+            $('.online_users').html('Only youuuu..');
+        } else {
+            $('.online_users').html(data.connected);
+        }
+        });
+        socket.on('user_leave', function(data) {
+        if (data.connected == 1) {
+            $('.online_users').html('Only youuuu..');
+        } else {
+            $('.online_users').html(data.connected);
+        }
+        })
+        
+        socket.on('mess', function(data){
+            console.log(data);
+            var name = $('.name').val();
+            var tpl = '<span class="name">'+ 'From user: ' + data.name +'</span>'+'<br>'+'<p class="message">' + data.mess + '</p>'+ '</br>' + '<span class="time">'+ time +'</span>' + '<br>' +'<br>'
+            $(tpl).prependTo('.chat');
+        });
+    });
+    </script>
+</body>
+</html>
